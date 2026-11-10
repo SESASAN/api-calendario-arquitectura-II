@@ -3,56 +3,71 @@
 Arquitectura cebolla (onion) de la API Calendario (Spring Boot + PostgreSQL).
 
 ```mermaid
-graph LR
-    %% Módulo Presentación
-    subgraph Presentacion [Módulo: presentacion]
+graph TB
+    %% -----------------------------------------------------------
+    %% NIVEL 1: CAPA DE PRESENTACIÓN / ENTRADA
+    %% -----------------------------------------------------------
+    subgraph Presentacion ["Capa 1: Presentación (API / Web)"]
         ApiApp["ApiApplication<br/>@SpringBootApplication"]
-        Controladores[CalendarioControlador<br/>TipoControlador / UsuarioControlador]
-        Configuracion[ConfiguracionSeguridad<br/>SwaggerConfig]
-        Handlers[ExcepcionesGlobalesHandler]
-        DtosPresentacion[ErrorRespuesta]
+        Controladores["CalendarioControlador<br/>TipoControlador / UsuarioControlador"]
+        Handlers["ExcepcionesGlobalesHandler"]
+        DtosPresentacion["ErrorRespuesta"]
+        Configuracion["ConfiguracionSeguridad<br/>SwaggerConfig"]
     end
 
-    %% Módulo Aplicación
-    subgraph Aplicacion [Módulo: aplicacion]
-        ServiciosApp[CalendarioServicio<br/>TipoServicio / UsuarioServicio]
-        SeguridadApp[FiltroSeguridad / SeguridadServicio<br/>UsuarioDetalleServicio / UsuarioDetalles]
+    %% -----------------------------------------------------------
+    %% NIVEL 2: CAPA DE APLICACIÓN
+    %% -----------------------------------------------------------
+    subgraph Aplicacion ["Capa 2: Aplicación (Casos de Uso)"]
+        ServiciosApp["CalendarioServicio<br/>TipoServicio / UsuarioServicio"]
+        SeguridadApp["FiltroSeguridad / SeguridadServicio<br/>UsuarioDetalleServicio / UsuarioDetalles"]
     end
 
-    %% Módulo Core
-    subgraph Core [Módulo: core]
-        InterfacesServicio[ICalendarioServicio<br/>ITipoServicio / IUsuarioServicio]
-        InterfacesRepo[ICalendarioRepositorio<br/>ITipoRepositorio / IUsuarioRepositorio]
-        InterfacesIntegracion[IFestivoServicioExterno]
+    %% -----------------------------------------------------------
+    %% NIVEL 3: CAPA CORE Y DOMINIO (CENTRO / REGLAS DE NEGOCIO)
+    %% -----------------------------------------------------------
+    subgraph Negocio ["Capa 3: Core y Dominio"]
+        subgraph Core ["Interfaces / Puertos (Core)"]
+            InterfacesServicio["ICalendarioServicio<br/>ITipoServicio / IUsuarioServicio"]
+            InterfacesRepo["ICalendarioRepositorio<br/>ITipoRepositorio / IUsuarioRepositorio"]
+            InterfacesIntegracion["IFestivoServicioExterno"]
+        end
+
+        subgraph Dominio ["Modelos y DTOs (Dominio)"]
+            Entidades["Calendario / Tipo / Usuario"]
+            DTOs["FestivoDto / UsuarioLoginDto"]
+        end
     end
 
-    %% Módulo Dominio
-    subgraph Dominio [Módulo: dominio]
-        Entidades[Calendario / Tipo / Usuario]
-        DTOs[FestivoDto / UsuarioLoginDto]
+    %% -----------------------------------------------------------
+    %% NIVEL 4: CAPA DE INFRAESTRUCTURA (ADAPTADORES / SALIDA)
+    %% -----------------------------------------------------------
+    subgraph Infraestructura ["Capa 4: Infraestructura (Adaptadores y Persistencia)"]
+        RepositoriosImpl["CalendarioRepositorio<br/>TipoRepositorio / UsuarioRepositorio"]
+        IntegracionExt["FestivoServicioExterno<br/>RestClient"]
+        Mapeadores["CalendarioMapeador<br/>TipoMapeador / UsuarioMapeador"]
+        RepositoriosJPA["ICalendarioRepositorioJpa<br/>ITipoRepositorioJpa / IUsuarioRepositorioJpa"]
+        EntidadesJPA["CalendarioEntidad<br/>TipoEntidad / UsuarioEntidad"]
     end
 
-    %% Módulo Infraestructura
-    subgraph Infraestructura [Módulo: infraestructura]
-        RepositoriosImpl[CalendarioRepositorio<br/>TipoRepositorio / UsuarioRepositorio]
-        Mapeadores[CalendarioMapeador<br/>TipoMapeador / UsuarioMapeador]
-        IntegracionExt[FestivoServicioExterno<br/>RestClient]
-        RepositoriosJPA[ICalendarioRepositorioJpa<br/>ITipoRepositorioJpa / IUsuarioRepositorioJpa]
-        EntidadesJPA[CalendarioEntidad<br/>TipoEntidad / UsuarioEntidad]
-        DB[(PostgreSQL<br/>CalendarioLaboral)]
-        APIExterna[API Festivos<br/>Express JS + MongoDB]
+    %% -----------------------------------------------------------
+    %% NIVEL 5: SISTEMAS EXTERNOS
+    %% -----------------------------------------------------------
+    subgraph Externos ["Recursos Externos"]
+        DB[("PostgreSQL<br/>CalendarioLaboral")]
+        APIExterna["API Festivos<br/>Express JS + MongoDB"]
     end
 
-    %% Presentación -> Core / Dominio
-    Controladores -->|Inyecta| InterfacesServicio
+    %% -----------------------------------------------------------
+    %% FLUJO DESCENDENTE ENTRE CAPAS
+    %% -----------------------------------------------------------
+    %% Flujo interno Presentación
     Handlers -->|Usa| DtosPresentacion
 
-    %% Enlaces invisibles: ordenan las capas de izquierda a derecha
-    DtosPresentacion ~~~ ServiciosApp
-    Entidades ~~~ RepositoriosImpl
-    DTOs ~~~ IntegracionExt
+    %% Presentación -> Aplicación & Core
+    Controladores -->|Inyecta| InterfacesServicio
 
-    %% Aplicación -> Core / Dominio
+    %% Aplicación -> Core & Dominio
     ServiciosApp -.->|Implementa| InterfacesServicio
     ServiciosApp -->|Inyecta| InterfacesRepo
     ServiciosApp -->|Inyecta| InterfacesIntegracion
@@ -64,23 +79,31 @@ graph LR
     InterfacesRepo -->|Usa| Entidades
     InterfacesIntegracion -->|Usa| DTOs
 
-    %% Infraestructura -> Core / Dominio
-    InterfacesRepo <-.-|Implementa| RepositoriosImpl
-    InterfacesIntegracion <-.-|Implementa| IntegracionExt
-    Entidades <-->|Transforma| Mapeadores
+    %% Infraestructura -> Core (Inversión de dependencias)
+    RepositoriosImpl -.->|Implementa| InterfacesRepo
+    IntegracionExt -.->|Implementa| InterfacesIntegracion
+    Mapeadores <-->|Transforma| Entidades
 
-    %% Infraestructura interna
+    %% Infraestructura Interna
     RepositoriosImpl -->|Usa| Mapeadores
     RepositoriosImpl -->|Inyecta| RepositoriosJPA
     Mapeadores <-->|Transforma| EntidadesJPA
-    RepositoriosJPA -->|Spring Data JPA / SQL| DB
-    EntidadesJPA -->|Mapeo ORM @Entity| DB
-    IntegracionExt -->|RestTemplate / GET<br/>/api/festivos/obtener/año| APIExterna
 
-    %% Estilos de Módulos
-    style Presentacion fill:#efebe9,stroke:#5d4037,stroke-width:2px
-    style Aplicacion fill:#e0f2f1,stroke:#00796b,stroke-width:2px
-    style Core fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    style Dominio fill:#fff8e1,stroke:#f9a825,stroke-width:2px
-    style Infraestructura fill:#eceff1,stroke:#455a64,stroke-width:2px
+    %% Infraestructura -> Sistemas Externos
+    RepositoriosJPA -->|Spring Data JPA| DB
+    EntidadesJPA -->|Mapeo ORM| DB
+    IntegracionExt -->|RestClient / GET<br/>/api/festivos/obtener/año| APIExterna
+
+    %% -----------------------------------------------------------
+    %% ESTILOS VISUALES
+    %% -----------------------------------------------------------
+    classDef default fill:#ffffff,stroke:#334155,stroke-width:1.5px,color:#0f172a;
+
+    style Presentacion fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#1e293b
+    style Aplicacion fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#14532d
+    style Negocio fill:#faf5ff,stroke:#9333ea,stroke-width:2px,color:#581c87
+    style Core fill:#ffffff,stroke:#c084fc,stroke-width:1.5px,color:#581c87
+    style Dominio fill:#ffffff,stroke:#fbbf24,stroke-width:1.5px,color:#78350f
+    style Infraestructura fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#0f172a
+    style Externos fill:#ecfeff,stroke:#0891b2,stroke-width:2px,color:#155e75
 ```
