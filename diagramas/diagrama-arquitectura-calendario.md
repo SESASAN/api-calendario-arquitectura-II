@@ -7,37 +7,38 @@ graph LR
     %% Módulo Presentación
     subgraph Presentacion [Módulo: presentacion]
         ApiApp["ApiApplication<br/>@SpringBootApplication"]
-        Controladores[CalendarioControlador]
-        Configuracion[SwaggerConfig]
+        Controladores[CalendarioControlador<br/>TipoControlador / UsuarioControlador]
+        Configuracion[ConfiguracionSeguridad<br/>SwaggerConfig]
         Handlers[ExcepcionesGlobalesHandler]
         DtosPresentacion[ErrorRespuesta]
     end
 
     %% Módulo Aplicación
     subgraph Aplicacion [Módulo: aplicacion]
-        ServiciosApp[CalendarioServicio]
+        ServiciosApp[CalendarioServicio<br/>TipoServicio / UsuarioServicio]
+        SeguridadApp[FiltroSeguridad / SeguridadServicio<br/>UsuarioDetalleServicio / UsuarioDetalles]
     end
 
     %% Módulo Core
     subgraph Core [Módulo: core]
-        InterfacesServicio[ICalendarioServicio]
-        InterfacesRepo[ICalendarioRepositorio<br/>ITipoRepositorio]
+        InterfacesServicio[ICalendarioServicio<br/>ITipoServicio / IUsuarioServicio]
+        InterfacesRepo[ICalendarioRepositorio<br/>ITipoRepositorio / IUsuarioRepositorio]
         InterfacesIntegracion[IFestivoServicioExterno]
     end
 
     %% Módulo Dominio
     subgraph Dominio [Módulo: dominio]
-        Entidades[Calendario / Tipo]
-        DTOs[FestivoDto]
+        Entidades[Calendario / Tipo / Usuario]
+        DTOs[FestivoDto / UsuarioLoginDto]
     end
 
     %% Módulo Infraestructura
     subgraph Infraestructura [Módulo: infraestructura]
-        RepositoriosImpl[CalendarioRepositorio<br/>TipoRepositorio]
-        Mapeadores[CalendarioMapeador<br/>TipoMapeador]
-        IntegracionExt[FestivoServicioExterno<br/>HttpServicio]
-        RepositoriosJPA[ICalendarioRepositorioJpa<br/>ITipoRepositorioJpa]
-        EntidadesJPA[CalendarioEntidad<br/>TipoEntidad]
+        RepositoriosImpl[CalendarioRepositorio<br/>TipoRepositorio / UsuarioRepositorio]
+        Mapeadores[CalendarioMapeador<br/>TipoMapeador / UsuarioMapeador]
+        IntegracionExt[FestivoServicioExterno<br/>RestClient]
+        RepositoriosJPA[ICalendarioRepositorioJpa<br/>ITipoRepositorioJpa / IUsuarioRepositorioJpa]
+        EntidadesJPA[CalendarioEntidad<br/>TipoEntidad / UsuarioEntidad]
         DB[(PostgreSQL<br/>CalendarioLaboral)]
         APIExterna[API Festivos<br/>Express JS + MongoDB]
     end
@@ -55,6 +56,8 @@ graph LR
     ServiciosApp -.->|Implementa| InterfacesServicio
     ServiciosApp -->|Inyecta| InterfacesRepo
     ServiciosApp -->|Inyecta| InterfacesIntegracion
+    SeguridadApp -->|Inyecta| InterfacesRepo
+    Configuracion -->|Usa| SeguridadApp
 
     %% Core -> Dominio
     InterfacesServicio -->|Usa| Entidades
