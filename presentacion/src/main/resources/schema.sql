@@ -1,0 +1,19 @@
+CREATE TABLE IF NOT EXISTS tipo (
+    id SERIAL PRIMARY KEY,
+    tipo VARCHAR(100) NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS calendario (
+    id SERIAL PRIMARY KEY,
+    fecha DATE NOT NULL UNIQUE,
+    idtipo INT NOT NULL REFERENCES tipo (id),
+    descripcion VARCHAR(100)
+);
+
+CREATE TABLE IF NOT EXISTS usuario (
+    id SERIAL PRIMARY KEY,
+    usuario VARCHAR(100) NOT NULL UNIQUE,
+    nombre VARCHAR(100),
+    clave VARCHAR(255) NOT NULL,
+    roles VARCHAR(255)
+);
